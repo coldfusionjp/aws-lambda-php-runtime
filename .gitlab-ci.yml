@@ -1,0 +1,22 @@
+stages:
+  - build
+
+variables:
+  DOCKER_HOST: tcp://docker:2375/
+  DOCKER_DRIVER: overlay2
+
+build:
+  stage: build
+  only:
+    - master
+  cache:
+    paths:
+      - build/
+  script:
+    - make login
+    - make
+  image: registry.gitlab.com/coldfusionjp/dockerfiles/gitlab-ci/dockerfiles:latest
+  services:
+    - docker:dind
+  tags:
+    - linux-runner

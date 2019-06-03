@@ -1,1 +1,5 @@
+bin
 build
+*.zip
+outputfile.txt
+resp.txt

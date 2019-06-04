@@ -7,6 +7,7 @@ ARG PHP_VERSION="7.3.6"
 RUN sed -i 's;^releasever.*;releasever=2018.03;;' /etc/yum.conf && \
 	yum clean all && \
 	yum install -y \
+		curl-devel \
 		diffutils \
 		file \
 		gcc-c++ \
@@ -16,6 +17,6 @@ RUN sed -i 's;^releasever.*;releasever=2018.03;;' /etc/yum.conf && \
 RUN cd /root && \
 	curl -sL https://www.php.net/distributions/php-${PHP_VERSION}.tar.xz | tar xJv && \
 	cd php-${PHP_VERSION} && \
-	./configure --prefix=/opt/php --disable-cgi --disable-all --enable-json --enable-mysqlnd --with-mysqli=mysqlnd --enable-mbstring --with-mhash CFLAGS="-Os" && \
+	./configure --prefix=/opt/php --disable-cgi --disable-all --enable-json --enable-mysqlnd --with-curl --with-mysqli=mysqlnd --enable-mbstring --with-mhash CFLAGS="-Os" && \
 	make -j4 install && \
 	strip /opt/php/bin/php

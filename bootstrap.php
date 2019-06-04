@@ -1,54 +1,91 @@
 <?php
 
-error_reporting(E_ALL | E_STRICT);
-
-echo "Hello world from PHP!\n";
+declare(strict_types = 1);
 
 class AWSLambdaPHPRuntime
 {
-	private function httpMethod($method, $uri, $params = null, $timeout = 5, $userAgent = null) : string
-	{
-		$opts = [
-			'http'  => [
-			'method'    => $method,
-			'timeout'   => $timeout,
-			'header'    => []
-			]
-		];
+	private $mEndpoint  = null;
+	private $mRequestID = null;
 
-		// attach params, if specified
-		if (!empty($params))
+	public function __construct()
+	{
+		// enable all errors
+		error_reporting(E_ALL | E_STRICT);
+
+		// generate runtime endpoint
+		$this->mEndpoint = "http://${_ENV['AWS_LAMBDA_RUNTIME_API']}/2018-06-01";
+	}
+
+	private function lambdaGet(string $uri, array &$headers): string
+	{
+		$ctx = curl_init($uri);
+		curl_setopt_array($ctx, [
+			CURLOPT_RETURNTRANSFER	=> true,
+			CURLOPT_TCP_NODELAY		=> true,
+			CURLOPT_HEADERFUNCTION	=> function($ctx, $header) use (&$headers) {
+				$len = strlen($header);
+				$hdr = explode(':', $header, 2);
+
+				// ignore invalid headers
+				if (count($hdr) < 2)
+					return $len;
+
+				// convert key to lowercase and add header to array
+				$name = strtolower(trim($hdr[0]));
+				if (!array_key_exists($name, $headers))
+					$headers[$name] = [ trim($hdr[1]) ];
+				else
+					$headers[$name][] = trim($hdr[1]);
+
+				return $len;
+			}
+		] );
+
+		$body = curl_exec($ctx);
+		curl_close($ctx);
+		return $body;
+	}
+
+	private function lambdaPost(string $uri, string $body)
+	{
+		$ctx = curl_init($uri);
+		curl_setopt_array($ctx, [
+			CURLOPT_RETURNTRANSFER	=> true,
+			CURLOPT_TCP_NODELAY		=> true,
+			CURLOPT_POST			=> true,
+			CURLOPT_POSTFIELDS		=> $body
+		] );
+
+		curl_exec($ctx);
+		curl_close($ctx);
+	}
+
+	private function nextInvocation(): array
+	{
+		$headers = [];
+		$body = $this->lambdaGet("{$this->mEndpoint}/runtime/invocation/next", $headers);
+
+		// store lambda request ID
+		$this->mRequestID = $headers['lambda-runtime-aws-request-id'][0];
+		return json_decode($body, true);
+	}
+
+	private function invocationResponse(array $response)
+	{
+		$body = json_encode($response);
+		$this->lambdaPost("{$this->mEndpoint}/runtime/invocation/{$this->mRequestID}/response", $body);
+	}
+
+	public function run()
+	{
+		for (;;)
 		{
-			array_push($opts['http']['header'], 'Content-type: application/x-www-form-urlencoded');
-			$opts['http']['content'] = http_build_query($params);
+			$resp = $this->nextInvocation();
+			$resp['hello'] = 'world';
+			$this->invocationResponse($resp);
 		}
-
-		// set user agent, if specified
-		if ($userAgent != null)
-			$opts['http']['user_agent'] = $userAgent;
-
-		$ctx = stream_context_create($opts);
-		return file_get_contents($uri, 0, $ctx);
-	}
-
-	private function httpGet($uri, $timeout = 5) : string
-	{
-		return $this->httpMethod('GET', $uri, null, $timeout);
-	}
-
-	private function httpPost($uri, $params = null, $timeout = 5, $userAgent = null) : string
-	{
-		return $this->httpMethod('POST', $uri, $params, $timeout, $userAgent);
-	}
-
-	public function error()
-	{
-		$this->httpPost("http://${_ENV['AWS_LAMBDA_RUNTIME_API']}/2018-06-01/runtime/init/error");
 	}
 }
 
-echo "creating PHP runtime...\n";
 $runtime = new AWSLambdaPHPRuntime();
-echo "about to error...\n";
-$runtime->error();
-echo "error done\n";
+$runtime->run();

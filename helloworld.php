@@ -1,8 +1,8 @@
 <?php
 
-$in = stream_get_contents(STDIN);
-$json = json_decode($in, true);
+function hello($in)
+{
+	$in['hello'] = 'world';
+	return $in;
+}
 
-$json['hello'] = 'world';
-
-echo json_encode($json);

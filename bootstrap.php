@@ -109,6 +109,12 @@ class AWSLambdaPHPRuntime
 		$this->lambdaPost("{$this->mEndpoint}/runtime/invocation/{$this->mRequestID}/response", $body);
 	}
 
+	private function invocationError(array $response): void
+	{
+		$body = json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+		$this->lambdaPost("{$this->mEndpoint}/runtime/invocation/{$this->mRequestID}/error", $body);
+	}
+
 	private function initializationError(string $msg): void
 	{
 		$this->lambdaPost("{$this->mEndpoint}/runtime/init/error", $msg);
@@ -122,11 +128,26 @@ class AWSLambdaPHPRuntime
 			// get next lambda invocation request
 			$resp = $this->nextInvocation();
 
-			// call user handler
-			$ret = call_user_func($this->mHandler, $resp);
+			try
+			{
+				// attempt to call user handler
+				$ret = call_user_func($this->mHandler, $resp);
 
-			// and return lambda response
-			$this->invocationResponse($ret);
+				// return lambda response
+				$this->invocationResponse($ret);
+			}
+			catch (Exception $e)
+			{
+				// dump exception to stdout (which gets sent to CloudWatch)
+				error_log("{$e}");
+
+				// then get message and stacktrace from exception and call lambda invocation error
+				$this->invocationError( [
+					'errorMessage'	=> $e->getMessage(),
+					'stackTrace'	=> $e->getTrace(),
+					'errorType'		=> 'Exception'
+				] );
+			}
 		}
 	}
 }

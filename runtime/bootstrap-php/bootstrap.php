@@ -126,15 +126,15 @@ class AWSLambdaPHPRuntime
 		for (;;)
 		{
 			// get next lambda invocation request
-			$resp = $this->nextInvocation();
+			$req = $this->nextInvocation();
 
 			try
 			{
 				// attempt to call user handler
-				$ret = call_user_func($this->mHandler, $resp);
+				$resp = call_user_func($this->mHandler, $req);
 
 				// return lambda response
-				$this->invocationResponse($ret);
+				$this->invocationResponse($resp);
 			}
 			catch (Exception $e)
 			{

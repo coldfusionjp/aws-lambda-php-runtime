@@ -2,11 +2,14 @@
 
 declare(strict_types = 1);
 
+require_once('Context.inc.php');
+
 class AWSLambdaPHPRuntime
 {
-	private $mEndpoint	= null;
-	private $mRequestID	= null;
-	private $mHandler	= null;
+	private $mEndpoint	  = null;
+	private $mHandlerFunc = null;
+	private $mLambdaCtx   = null;
+	private $mRequestCtx  = null;
 
 	public function __construct()
 	{
@@ -17,8 +20,7 @@ class AWSLambdaPHPRuntime
 		$this->mEndpoint = "http://${_ENV['AWS_LAMBDA_RUNTIME_API']}/2018-06-01";
 
 		// get lambda handler of desired user file.function to call
-		$handler = getenv('_HANDLER');
-		$hpair = explode('.', $handler);
+		$hpair = explode('.', $_ENV['_HANDLER']);
 		if (count($hpair) < 2)
 			$this->initializationError("Error: Lambda handler must be in 'file.function' format");
 
@@ -31,8 +33,17 @@ class AWSLambdaPHPRuntime
 		if (!function_exists($hpair[1]))
 			$this->initializationError("Error: Lambda handler function [{$hpair[1]}] not found in [{$inc}]");
 
-		// store our function handler
-		$this->mHandler = $hpair[1];
+		// store our handler function
+		$this->mHandlerFunc = $hpair[1];
+
+		// create our initial lambda context from the environment
+		$this->mLambdaCtx = [
+			'functionName'		=> $_ENV['AWS_LAMBDA_FUNCTION_NAME'] ?? null,
+			'functionVersion'	=> $_ENV['AWS_LAMBDA_FUNCTION_VERSION'] ?? null,
+			'memoryLimitInMB'	=> intval($_ENV['AWS_LAMBDA_FUNCTION_MEMORY_SIZE'] ?? 0),
+			'logGroupName'		=> $_ENV['AWS_LAMBDA_LOG_GROUP_NAME'] ?? null,
+			'logStreamName'		=> $_ENV['AWS_LAMBDA_LOG_STREAM_NAME'] ?? null
+		];
 	}
 
 	private function lambdaGet(string $uri, array &$headers): string
@@ -85,18 +96,26 @@ class AWSLambdaPHPRuntime
 		$headers = [];
 		$body = $this->lambdaGet("{$this->mEndpoint}/runtime/invocation/next", $headers);
 
-		// store lambda request ID
-		$this->mRequestID = $headers['lambda-runtime-aws-request-id'][0];
+		// create request context from received headers
+		$this->mRequestCtx = [
+			'awsRequestID'			=> $headers['lambda-runtime-aws-request-id'][0] ?? null,
+			'deadlineMsec'			=> intval($headers['lambda-runtime-deadline-ms'][0] ?? 0),
+			'invokedFunctionARN'	=> $headers['lambda-runtime-invoked-function-arn'][0] ?? null,
+			'traceID'				=> $headers['lambda-runtime-trace-id'][0] ?? null,
+			'clientContext'			=> $headers['lambda-runtime-client-context'][0] ?? null,
+			'identity'				=> $headers['lambda-runtime-cognito-identity'][0] ?? null
+		];
 
 		// propagate the X-Ray tracing header to both the PHP environment and any child environment
-		$xray = $headers['lambda-runtime-trace-id'][0];
+		// see "Processing Tasks" at bottom of page here: https://docs.aws.amazon.com/lambda/latest/dg/runtimes-custom.html
+		$xray = $this->mRequestCtx['traceID'];
 		$_ENV['_X_AMZN_TRACE_ID'] = $xray;
 		putenv("_X_AMZN_TRACE_ID={$xray}");
 
 		// attempt to decode the incoming request JSON
 		$arr = json_decode($body, true);
 
-		// if the decode failed for any reason, recreate it as an empty array (so the user code can either handle or error on any lack of data itself)
+		// if the decode failed for any reason, recreate it as an empty array (so the user code can either handle or error on any lack of data by itself)
 		if (!is_array($arr))
 			$arr = [];
 
@@ -106,13 +125,13 @@ class AWSLambdaPHPRuntime
 	private function invocationResponse(array $response): void
 	{
 		$body = json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-		$this->lambdaPost("{$this->mEndpoint}/runtime/invocation/{$this->mRequestID}/response", $body);
+		$this->lambdaPost("{$this->mEndpoint}/runtime/invocation/{$this->mRequestCtx['awsRequestID']}/response", $body);
 	}
 
 	private function invocationError(array $response): void
 	{
 		$body = json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-		$this->lambdaPost("{$this->mEndpoint}/runtime/invocation/{$this->mRequestID}/error", $body);
+		$this->lambdaPost("{$this->mEndpoint}/runtime/invocation/{$this->mRequestCtx['awsRequestID']}/error", $body);
 	}
 
 	private function initializationError(string $msg): void
@@ -128,10 +147,13 @@ class AWSLambdaPHPRuntime
 			// get next lambda invocation request
 			$req = $this->nextInvocation();
 
+			// create application context, combining both lambda environment and request contexts
+			$ctx = new Context($this->mLambdaCtx + $this->mRequestCtx);
+
 			try
 			{
 				// attempt to call user handler
-				$resp = call_user_func($this->mHandler, $req);
+				$resp = call_user_func($this->mHandlerFunc, $req, $ctx);
 
 				// return lambda response
 				$this->invocationResponse($resp);

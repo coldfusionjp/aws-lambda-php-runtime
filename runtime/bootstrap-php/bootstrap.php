@@ -165,10 +165,10 @@ class AWSLambdaPHPRuntime
 
 			try
 			{
-				// attempt to call user handler
+				// call user handler
 				$resp = call_user_func($this->mHandlerFunc, $req, $ctx);
 
-				// return lambda response
+				// and return lambda response
 				$this->invocationResponse($resp);
 			}
 			catch (Exception $e)
@@ -176,7 +176,7 @@ class AWSLambdaPHPRuntime
 				// dump exception to stdout (which gets sent to CloudWatch)
 				error_log("{$e}");
 
-				// then get message and stacktrace from exception and call lambda invocation error
+				// then get message and stacktrace from exception, and call lambda invocation error
 				$this->invocationError( [
 					'errorMessage'	=> $e->getMessage(),
 					'stackTrace'	=> $e->getTrace(),

@@ -46,12 +46,24 @@ class AWSLambdaPHPRuntime
 		];
 	}
 
+	private function getCurlOptions(): array
+	{
+		// we set curl to wait forever (CURLOPT_TIMEOUT of 0) for a response from Lambda.  from https://github.com/awslabs/aws-lambda-cpp/blob/master/src/runtime.cpp:
+		//   "lambda freezes the container when no further tasks are available. The freezing period could be longer than the
+		//    request timeout, which causes the following get_next request to fail with a timeout error."
+		return [
+			CURLOPT_TIMEOUT			=> 0,
+			CURLOPT_CONNECTTIMEOUT	=> 1,
+			CURLOPT_NOSIGNAL		=> true,
+			CURLOPT_TCP_NODELAY		=> true,
+			CURLOPT_RETURNTRANSFER	=> true
+		];
+	}
+
 	private function lambdaGet(string $uri, array &$headers): string
 	{
 		$ctx = curl_init($uri);
-		curl_setopt_array($ctx, [
-			CURLOPT_RETURNTRANSFER	=> true,
-			CURLOPT_TCP_NODELAY		=> true,
+		curl_setopt_array($ctx, $this->getCurlOptions() + [
 			CURLOPT_HEADERFUNCTION	=> function($ctx, $header) use (&$headers) {
 				// split header
 				$len = strlen($header);
@@ -80,9 +92,7 @@ class AWSLambdaPHPRuntime
 	private function lambdaPost(string $uri, string $body): void
 	{
 		$ctx = curl_init($uri);
-		curl_setopt_array($ctx, [
-			CURLOPT_RETURNTRANSFER	=> true,
-			CURLOPT_TCP_NODELAY		=> true,
+		curl_setopt_array($ctx, $this->getCurlOptions() + [
 			CURLOPT_POST			=> true,
 			CURLOPT_POSTFIELDS		=> $body
 		] );
@@ -124,18 +134,21 @@ class AWSLambdaPHPRuntime
 
 	private function invocationResponse(array $response): void
 	{
+		// encode response and post to response endpoint
 		$body = json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 		$this->lambdaPost("{$this->mEndpoint}/runtime/invocation/{$this->mRequestCtx['awsRequestID']}/response", $body);
 	}
 
 	private function invocationError(array $response): void
 	{
+		// encode response and post to error endpoint
 		$body = json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 		$this->lambdaPost("{$this->mEndpoint}/runtime/invocation/{$this->mRequestCtx['awsRequestID']}/error", $body);
 	}
 
 	private function initializationError(string $msg): void
 	{
+		// send message to initialization endpoint and exit
 		$this->lambdaPost("{$this->mEndpoint}/runtime/init/error", $msg);
 		exit(1);
 	}

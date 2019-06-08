@@ -8,8 +8,6 @@ function mainHandler(array $event, Context $ctx): array
 {
 	var_dump($ctx);
 	$event['hello'] = 'world';
-	echo "time remaining, before sleep (msec): " . $ctx->getRemainingTimeInMsec();
-	sleep(1);
-	echo "time remaining, after sleep (msec): " . $ctx->getRemainingTimeInMsec();
+	echo "time remaining (msec): " . $ctx->getRemainingTimeInMsec();
 	return $event;
 }

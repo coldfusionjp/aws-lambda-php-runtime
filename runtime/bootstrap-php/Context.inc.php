@@ -2,13 +2,18 @@
 
 declare(strict_types = 1);
 
+require_once('Logger.inc.php');
+
 class Context
 {
 	private $mProperties = null;
+	private $mLogger	 = null;
 
 	public function __construct(array $properties)
 	{
+		// store properties and create a logger object, passing the lambda request ID
 		$this->mProperties = $properties;
+		$this->mLogger	   = new Logger($this->mProperties['awsRequestID']);
 	}
 
 	public function __get(string $key): ?mixed
@@ -27,5 +32,10 @@ class Context
 
 		// subtract from context deadline time to determine remaining time
 		return $this->mProperties['deadlineMsec'] - $msec;
+	}
+
+	public function getLogger(): Logger
+	{
+		return $this->mLogger;
 	}
 }

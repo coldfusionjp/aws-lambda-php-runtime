@@ -11,6 +11,13 @@ SHELL				:= /bin/bash
 SOURCES				:= runtime/bootstrap runtime/bootstrap-php/bootstrap.php runtime/bootstrap-php/Context.inc.php runtime/bootstrap-php/Logger.inc.php
 TEST_SOURCES		:= tests/helloworld.php
 
+UNAME_OS			:= $(shell uname -s)
+ifeq ($(UNAME_OS),Darwin)
+BASE64_DECODE		:= base64 --decode
+else
+BASE64_DECODE		:= base64 -d
+endif
+
 #------------------------------------------------------------------------
 
 default: build/php-runtime.zip
@@ -59,7 +66,7 @@ test: build/tests.zip
 	@echo ''
 	@echo ''
 	@echo 'Logs:'
-	@cat log.txt | jq -r '.LogResult' | base64 --decode
+	@cat log.txt | jq -r '.LogResult' | $(BASE64_DECODE)
 	@rm -f response.txt log.txt
 
 clean:

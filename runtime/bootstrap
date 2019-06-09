@@ -1,2 +1,2 @@
 #!/bin/sh
-bootstrap-php/bin/php bootstrap-php/bootstrap.php
+/opt/bootstrap-php/bin/php /opt/bootstrap-php/bootstrap.php

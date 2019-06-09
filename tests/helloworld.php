@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-require_once('/opt/bootstrap-php/Context.inc.php');
+require_once('/opt/CFPHPRuntime/Context.inc.php');
 
 function mainHandler(array $event, Context $ctx): array
 {

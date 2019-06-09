@@ -8,7 +8,7 @@ AWS_DEFAULT_REGION	?= $(shell aws configure get region)
 #------------------------------------------------------------------------
 
 SHELL				:= /bin/bash
-SOURCES				:= runtime/bootstrap runtime/bootstrap-php/bootstrap.php runtime/bootstrap-php/Context.inc.php runtime/bootstrap-php/Logger.inc.php
+SOURCES				:= runtime/bootstrap runtime/CFPHPRuntime/bootstrap.php runtime/CFPHPRuntime/Context.inc.php runtime/CFPHPRuntime/Logger.inc.php
 TEST_SOURCES		:= tests/helloworld.php
 
 UNAME_OS			:= $(shell uname -s)
@@ -40,12 +40,12 @@ build/%.log: %/Dockerfile
 	docker push $(DOCKER_REPOSITORY)/$(<D):latest
 
 # extract php binary from built Docker image
-runtime/bootstrap-php/bin/php: build/php-builder.log
+runtime/CFPHPRuntime/bin/php: build/php-builder.log
 	@mkdir -p $(dir $@)
 	docker run -v $(PWD)/$(dir $@):/mnt --rm --entrypoint cp $(DOCKER_REPOSITORY)/php-builder:latest /opt/php/bin/php /mnt
 
 # compress runtime package and upload to AWS Lambda
-build/php-runtime.zip: $(SOURCES) runtime/bootstrap-php/bin/php
+build/php-runtime.zip: $(SOURCES) runtime/CFPHPRuntime/bin/php
 	cd runtime && zip -v -9 -r ../$@ *
 	aws lambda publish-layer-version --layer-name php7-runtime --description "PHP 7 Custom Runtime" --zip-file fileb://$@
 

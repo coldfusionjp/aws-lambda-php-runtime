@@ -46,11 +46,13 @@ runtime/CFPHPRuntime/bin/php: build/php-builder.log
 
 # compress runtime package and upload to AWS Lambda
 build/php-runtime.zip: $(SOURCES) runtime/CFPHPRuntime/bin/php
+	@rm -f $@
 	cd runtime && zip -v -9 -r ../$@ *
 	aws lambda publish-layer-version --layer-name php7-runtime --description "PHP 7 Custom Runtime" --zip-file fileb://$@
 
 # package test functions
 build/tests.zip: $(TEST_SOURCES)
+	@rm -f $@
 	cd tests && zip -v -9 -r ../$@ *
 
 # create lambda function for testing (only needs to be manually performed once, not used by CI)

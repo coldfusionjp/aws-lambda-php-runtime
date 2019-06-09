@@ -2,6 +2,8 @@
 .DELETE_ON_ERROR:
 
 DOCKER_REPOSITORY	:= registry.gitlab.com/coldfusionjp/private/awslambdaphpruntime
+AWS_ACCOUNT_ID		 = $(shell aws sts get-caller-identity | jq -r .Account)
+AWS_DEFAULT_REGION	 = $(shell aws configure get region)
 
 #------------------------------------------------------------------------
 
@@ -38,6 +40,14 @@ runtime/bootstrap-php/bin/php: build/php-builder.log
 build/php-runtime.zip: $(SOURCES) runtime/bootstrap-php/bin/php
 	cd runtime && zip -v -9 -r ../$@ *
 	aws lambda publish-layer-version --layer-name php7-runtime --description "PHP 7 Custom Runtime" --zip-file fileb://$@
+
+# package test functions
+build/tests.zip:
+	cd tests && zip -v -9 -r ../$@ *
+
+# create lambda function for testing (only needs to be manually performed once, not used by CI)
+test-create: build/tests.zip
+	aws lambda create-function --function-name php7-runtime-tests --role "arn:aws:iam::$(AWS_ACCOUNT_ID):role/lambda-basic-execute" --layers "arn:aws:lambda:$(AWS_DEFAULT_REGION):$(AWS_ACCOUNT_ID):layer:php7-runtime:6" --runtime provided --handler none --zip-file fileb://$<
 
 clean:
 	rm -rf build

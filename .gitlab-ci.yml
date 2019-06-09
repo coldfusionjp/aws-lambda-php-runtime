@@ -23,10 +23,14 @@ build:
     - linux-runner
 
 test:
-  stage: build
+  stage: test
   only:
     - master
   dependencies: []
+  cache:
+    policy: pull
+    paths:
+      - build/
   script:
     - make test
   image: registry.gitlab.com/coldfusionjp/dockerfiles/gitlab-ci/dockerfiles:latest

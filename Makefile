@@ -2,8 +2,8 @@
 .DELETE_ON_ERROR:
 
 DOCKER_REPOSITORY	:= registry.gitlab.com/coldfusionjp/private/awslambdaphpruntime
-AWS_ACCOUNT_ID		 = $(shell aws sts get-caller-identity | jq -r .Account)
-AWS_DEFAULT_REGION	 = $(shell aws configure get region)
+AWS_ACCOUNT_ID		?= $(shell aws sts get-caller-identity | jq -r .Account)
+AWS_DEFAULT_REGION	?= $(shell aws configure get region)
 
 #------------------------------------------------------------------------
 

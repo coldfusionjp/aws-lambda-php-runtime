@@ -50,7 +50,9 @@ test-create: build/tests.zip
 
 # push runtime tests and invoke lambda
 test: build/tests.zip
-	aws lambda update-function-code --function-name php-runtime-tests --zip-file fileb://$<
+	LAYER_LATEST_ARN=`aws lambda list-layer-versions --layer-name "php-runtime" | jq -r '.LayerVersions[0].LayerVersionArn'` ; \
+	aws lambda update-function-configuration --function-name "php-runtime-tests" --layers "$${LAYER_LATEST_ARN}"
+	aws lambda update-function-code --function-name "php-runtime-tests" --zip-file fileb://$<
 	aws lambda invoke --invocation-type RequestResponse --function-name php-runtime-tests --log-type Tail --payload '{"key1":"value1","key2":"value2","key3":"value3"}' response.txt > log.txt
 	@echo 'Response:'
 	@cat response.txt

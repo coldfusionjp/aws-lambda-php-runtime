@@ -10,9 +10,6 @@ build:
   stage: build
   only:
     - master
-  cache:
-    paths:
-      - build/
   script:
     - make
   image: registry.gitlab.com/coldfusionjp/gitlab-ci:latest

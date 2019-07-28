@@ -41,6 +41,7 @@ build/php-runtime.zip: $(SOURCES) runtime/CFPHPRuntime/bin/php
 # package test functions
 build/tests.zip: $(TEST_SOURCES)
 	@rm -f $@
+	@mkdir -p $(dir $@)
 	cd tests && zip -v -9 -r ../$@ *
 
 # create lambda function for testing (only needs to be manually performed once, not used by CI)

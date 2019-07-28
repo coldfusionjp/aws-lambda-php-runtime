@@ -1,15 +1,13 @@
-.SUFFIXES:
-.DELETE_ON_ERROR:
+PHP_VERSION			:= php-7.3.6
 
-DOCKER_REPOSITORY	:= registry.gitlab.com/coldfusionjp/private/awslambdaphpruntime
 AWS_ACCOUNT_ID		?= $(shell aws sts get-caller-identity | jq -r .Account)
 AWS_DEFAULT_REGION	?= $(shell aws configure get region)
 
 #------------------------------------------------------------------------
 
-SHELL				:= /bin/bash
 SOURCES				:= runtime/bootstrap runtime/CFPHPRuntime/bootstrap.php runtime/CFPHPRuntime/Context.inc.php runtime/CFPHPRuntime/Logger.inc.php
 TEST_SOURCES		:= tests/helloworld.php
+SHELL				:= /bin/bash
 
 UNAME_OS			:= $(shell uname -s)
 ifeq ($(UNAME_OS),Darwin)
@@ -20,35 +18,25 @@ endif
 
 #------------------------------------------------------------------------
 
+.DELETE_ON_ERROR:
+
 default: build/php-runtime.zip
 
-# allow GitLab CI instance to authenticate to GitLab Container Registry using GitLab predefined environment variables (avoids need for an access token)
-# note that this is not necessary when running builds on a local machine, as the user should already be authenticated using his/her own access key.
-login:
-	docker login -u $(CI_REGISTRY_USER) -p $(CI_JOB_TOKEN) $(CI_REGISTRY)
-
 # build a Docker image given a Dockerfile
-# since we intend to run this script on GitLab provided CI instances, we first prime the Docker cache by pulling the image from the GitLab Docker repository.
-# the image build step then uses --cache-from to ensure the layers of the pulled Docker image is used in the build process to avoid a complete rebuild every time.
-# note: there currently is a Docker/GitLab CI bug where the previous pulled layers are not reused as a cache, so we also pull the base FROM image as well.
-# see: https://github.com/moby/moby/issues/31613#issuecomment-342857930
 build/%.log: %/Dockerfile
 	@mkdir -p $(dir $@)
-	docker pull `grep -i FROM $< | head -n 1 | awk '{print $$2}'` 
-	docker pull $(DOCKER_REPOSITORY)/$(<D):latest || true
-	docker build --cache-from $(DOCKER_REPOSITORY)/$(<D):latest --tag $(DOCKER_REPOSITORY)/$(<D):latest $(<D) | tee $@ ; exit "$${PIPESTATUS[0]}"
-	docker push $(DOCKER_REPOSITORY)/$(<D):latest
+	time docker build --build-arg PHP_VERSION="$(PHP_VERSION)" -t coldfusionjp/aws-lambda-php-runtime:latest $(<D) | tee $@ ; exit "$${PIPESTATUS[0]}"
 
 # extract php binary from built Docker image
 runtime/CFPHPRuntime/bin/php: build/php-builder.log
 	@mkdir -p $(dir $@)
-	docker run -v $(PWD)/$(dir $@):/mnt --rm --entrypoint cp $(DOCKER_REPOSITORY)/php-builder:latest /opt/php/bin/php /mnt
+	docker run -v $(PWD)/$(dir $@):/mnt --rm --entrypoint cp coldfusionjp/aws-lambda-php-runtime:latest /opt/php/bin/php /mnt
 
 # compress runtime package and upload to AWS Lambda
 build/php-runtime.zip: $(SOURCES) runtime/CFPHPRuntime/bin/php
 	@rm -f $@
 	cd runtime && zip -v -9 -r ../$@ *
-	aws lambda publish-layer-version --layer-name php7-runtime --description "PHP 7 Custom Runtime" --zip-file fileb://$@
+	aws lambda publish-layer-version --layer-name php-runtime --description "PHP Runtime" --zip-file fileb://$@
 
 # package test functions
 build/tests.zip: $(TEST_SOURCES)
@@ -57,12 +45,12 @@ build/tests.zip: $(TEST_SOURCES)
 
 # create lambda function for testing (only needs to be manually performed once, not used by CI)
 test-create: build/tests.zip
-	aws lambda create-function --function-name php7-runtime-tests --role "arn:aws:iam::$(AWS_ACCOUNT_ID):role/lambda-basic-execute" --layers "arn:aws:lambda:$(AWS_DEFAULT_REGION):$(AWS_ACCOUNT_ID):layer:php7-runtime:6" --runtime provided --handler none --zip-file fileb://$<
+	aws lambda create-function --function-name php-runtime-tests --role "arn:aws:iam::$(AWS_ACCOUNT_ID):role/lambda-basic-execute" --layers "arn:aws:lambda:$(AWS_DEFAULT_REGION):$(AWS_ACCOUNT_ID):layer:php-runtime:1" --runtime provided --handler "helloworld.mainHandler" --zip-file fileb://$<
 
 # push runtime tests and invoke lambda
 test: build/tests.zip
-	aws lambda update-function-code --function-name php7-runtime-tests --zip-file fileb://$<
-	aws lambda invoke --invocation-type RequestResponse --function-name php7-runtime-tests --log-type Tail --payload '{"key1":"value1","key2":"value2","key3":"value3"}' response.txt > log.txt
+	aws lambda update-function-code --function-name php-runtime-tests --zip-file fileb://$<
+	aws lambda invoke --invocation-type RequestResponse --function-name php-runtime-tests --log-type Tail --payload '{"key1":"value1","key2":"value2","key3":"value3"}' response.txt > log.txt
 	@echo 'Response:'
 	@cat response.txt
 	@echo ''
@@ -73,12 +61,3 @@ test: build/tests.zip
 
 clean:
 	rm -rf build
-
-#------------------------------------------------------------------------
-# disable implicit prerequisite rules for RCS and SCCS
-#------------------------------------------------------------------------
-%: %,v
-%: RCS/%,v
-%: RCS/%
-%: s.%
-%: SCCS/s.%

@@ -1,6 +1,5 @@
 stages:
   - build
-  - test
 
 variables:
   DOCKER_HOST: tcp://docker:2375/
@@ -14,26 +13,10 @@ build:
     paths:
       - build/
   script:
-    - make login
     - make
-  image: registry.gitlab.com/coldfusionjp/dockerfiles/gitlab-ci/dockerfiles:latest
+    - make test
+  image: registry.gitlab.com/coldfusionjp/gitlab-ci:latest
   services:
     - docker:dind
   tags:
     - linux-runner
-
-test:
-  stage: test
-  only:
-    - master
-  dependencies: []
-  cache:
-    policy: pull
-    paths:
-      - build/
-  script:
-    - make test
-  image: registry.gitlab.com/coldfusionjp/dockerfiles/gitlab-ci/dockerfiles:latest
-  tags:
-    - linux-runner
-

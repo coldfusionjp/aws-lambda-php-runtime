@@ -66,8 +66,8 @@ build/tests.zip: $(TEST_SOURCES)
 	@mkdir -p $(dir $@)
 	cd tests && zip -v -9 -r ../$@ *	
 
-# push runtime tests and invoke lambda
-test: build/tests.zip
+# create lambda functions required for testing
+test-create-functions: build/tests.zip
 	@for version in $(PHP_VERSIONS); do \
 		LAYER_NAME=`echo $${version}-runtime | sed "s/\./_/g"` ; \
 		FUNCTION_NAME=`echo $${version}-runtime-tests | sed "s/\./_/g"` ; \
@@ -76,6 +76,19 @@ test: build/tests.zip
 		if [ "$${FUNCTION_CHECK}" != "$${FUNCTION_NAME}" ] ; then \
 			echo "Function \"$${FUNCTION_NAME}\" does not exist on AWS Lambda, creating..." ; \
 			aws lambda create-function --function-name "$${FUNCTION_NAME}" --role "arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(LAMBDA_EXECUTE_ROLE)" --layers "$${LAYER_LATEST_ARN}" --runtime provided --handler "helloworld.mainHandler" --zip-file fileb://$< ; \
+		fi ; \
+	done
+
+# push runtime tests and invoke lambda
+test: build/tests.zip
+	@for version in $(PHP_VERSIONS); do \
+		LAYER_NAME=`echo $${version}-runtime | sed "s/\./_/g"` ; \
+		FUNCTION_NAME=`echo $${version}-runtime-tests | sed "s/\./_/g"` ; \
+		LAYER_LATEST_ARN=`aws lambda list-layer-versions --layer-name "$${LAYER_NAME}" | jq -r '.LayerVersions[0].LayerVersionArn'` ; \
+		FUNCTION_CHECK=`aws lambda get-function-configuration --function-name "$${FUNCTION_NAME}" 2>&1 | jq -r '.FunctionName'` ; \
+		if [ "$${FUNCTION_CHECK}" != "$${FUNCTION_NAME}" ] ; then \
+			echo "Function \"$${FUNCTION_NAME}\" does not exist on AWS Lambda, please run \"make test-create-functions\" first!" ; \
+			exit 1 ; \
 		fi ; \
 		aws lambda update-function-configuration --function-name "$${FUNCTION_NAME}" --layers "$${LAYER_LATEST_ARN}" ; \
 		aws lambda update-function-code --function-name "$${FUNCTION_NAME}" --zip-file fileb://$< ; \

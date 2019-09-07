@@ -1,5 +1,11 @@
 <?php
 
+// AWS Lambda PHP Runtime Layer (https://gitlab.com/coldfusionjp/aws-lambda-php-runtime)
+// Copyright 2019 Cold Fusion, Inc.
+//
+// This file is subject to the terms and conditions as declared in the file 'LICENSE',
+// which has been included as part of this source code package.
+
 declare(strict_types = 1);
 
 require_once('Logger.inc.php');

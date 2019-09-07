@@ -84,5 +84,13 @@ test: build/tests.zip
 		rm -f response.txt log.txt ; \
 	done
 
+# share latest version of all PHP runtime layers for public use by all AWS accounts
+public-share:
+	@for version in $(PHP_VERSIONS); do \
+		LAYER_NAME=`echo $${version}-runtime | sed "s/\./_/g"` ; \
+		LAYER_LATEST_VERSION=`aws lambda list-layer-versions --layer-name "$${LAYER_NAME}" | jq -r '.LayerVersions[0].Version'` ; \
+		aws lambda add-layer-version-permission --layer-name "$${LAYER_NAME}" --version-number "$${LAYER_LATEST_VERSION}" --principal "*" --statement-id "php-runtime-public-share" --action lambda:GetLayerVersion ; \
+	done
+
 clean:
 	rm -rf build

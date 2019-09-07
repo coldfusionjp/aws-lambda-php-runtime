@@ -2,7 +2,24 @@
 
 [![pipeline status](https://gitlab.com/coldfusionjp/aws-lambda-php-runtime/badges/master/pipeline.svg)](https://gitlab.com/coldfusionjp/aws-lambda-php-runtime/commits/master)
 
-The **AWS Lambda PHP Runtime Layer** is an implementation of a custom runtime to provide direct PHP language support with AWS Lambda, packaged into an easy-to-use lambda layer.  The latest versions of PHP 7.3+ are provided, with the PHP binary built directly from the [source distributions available at php.net](https://www.php.net/distributions/).
+The **AWS Lambda PHP Runtime Layer** is an implementation of a custom lambda runtime to provide direct PHP language support with AWS Lambda, packaged into an easy-to-use lambda layer.  The latest versions of PHP 7.3+ are provided, with the PHP binary built directly from the [source distributions available at php.net](https://www.php.net/distributions/).
+
+## Quickstart
+
+If you want to get started right away, you can simply use our layers directly with your lambda functions.  Choose an ARN below based on the version of PHP required by your application, and attach it as a layer to your lambda function:
+
+* php-7.3.9: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_3_9-runtime:7`
+* php-7.3.8: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_3_8-runtime:10`
+* php-7.3.7: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_3_7-runtime:15`
+* php-7.3.6: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_3_6-runtime:21`
+
+Currently we only provide the PHP Runtime Layers in the Tokyo (`ap-northeast-1`) region, but we'll expand this soon so they're available in all AWS regions.
+
+## Overview
+
+A Dockerfile based on Amazon Linux (using the same runtime as Lambda) downloads the PHP source code directly from php.net, and builds a single PHP CLI binary using `clang`, with optimizations tweaked specifically for size.  For example, the `CodeSize` for the php-7.3.9 layer is only 2,476,686 bytes, allowing the lambda function to quickly perform a cold startup.  Our unit tests execute in roughly 200ms for a cold start, while a warm start fully executes in only 17ms.
+
+The Amazon Linux Docker image with a prepackaged `clang` compiler is built using [our Docker scripts](https://gitlab.com/coldfusionjp/build-clang-llvm), and the images are available on [Docker Hub](https://hub.docker.com/r/coldfusionjp/amazonlinux-clang).
 
 ## License
 

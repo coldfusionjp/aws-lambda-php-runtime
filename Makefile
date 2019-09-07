@@ -46,7 +46,7 @@ $(target): Dockerfile
 	time docker build --build-arg PHP_VERSION="$$(call phpTag,$$@)" -t "coldfusionjp/aws-lambda-php-runtime:$$(call phpVersion,$$@)" -f $$< . | tee build/$$(call phpTag,$$@).log ; exit "$$$${PIPESTATUS[0]}"
 	docker run -v $$(PWD)/src/php-runtime/bin:/mnt --rm --entrypoint cp "coldfusionjp/aws-lambda-php-runtime:$$(call phpVersion,$$@)" /opt/php/bin/php /mnt
 	cd src && zip -v -9 -r ../$$@ *
-	aws lambda publish-layer-version --layer-name "$$(call lambdaLayerName,$$@)-runtime" --description "PHP $$(call phpVersion,$$@) Runtime" --license-info MIT --zip-file fileb://$$@
+	aws lambda publish-layer-version --layer-name "$$(call lambdaLayerName,$$@)-runtime" --description "PHP $$(call phpVersion,$$@) Runtime" --license-info "https://gitlab.com/coldfusionjp/aws-lambda-php-runtime#license" --zip-file fileb://$$@
 endef
 
 #------------------------------------------------------------------------

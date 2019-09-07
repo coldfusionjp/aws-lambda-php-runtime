@@ -6,6 +6,6 @@ The **AWS Lambda PHP Runtime Layer** is an implementation of a custom runtime to
 
 ## License
 
-The AWS Lambda PHP Runtime Layer is distributed by Cold Fusion, Inc. under the [MIT License](https://choosealicense.com/licenses/mit/).
+The source implementation of the AWS Lambda PHP Runtime Layer found in this repository is distributed by Cold Fusion, Inc. under the [MIT License](https://choosealicense.com/licenses/mit/), however PHP 7 itself is distributed under the [PHP License v3.01](https://www.php.net/license/3_01.txt).
 
 See [LICENSE](./LICENSE) for more information.

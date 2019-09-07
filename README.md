@@ -15,6 +15,37 @@ If you want to get started right away, you can simply use our layers directly wi
 
 Currently we only provide the PHP Runtime Layers in the Tokyo (`ap-northeast-1`) region, but we'll expand this soon so they're available in all AWS regions.
 
+## Example Code
+
+Combined with the [AWS SDK for PHP Lambda Layer](https://gitlab.com/coldfusionjp/aws-sdk-php-lambda-layer), performing AWS operations with Lambda in PHP only requires a few lines of code:
+
+```
+<?php
+
+require_once('/opt/php-runtime/Context.inc.php');
+require_once('/opt/aws-sdk-php/aws-autoloader.php');
+
+use Aws\Sdk;
+
+function mainHandler(array $event, Context $ctx): array
+{
+	// initialize AWS SDK
+	$aws = new Aws\Sdk;
+
+	// write object to S3
+	$s3 = $aws->createS3( [
+		'version'			=> '2006-03-01',
+		'region'			=> 'us-east-1'
+	] );
+
+	$res = $s3->putObject( [
+		'Bucket'			=> 'mybucket',
+		'Key'				=> 'path/event.txt',
+		'Body'				=> $event['text']
+	] );
+}
+```
+
 ## Overview
 
 A Dockerfile based on Amazon Linux (using the same runtime as Lambda) downloads the PHP source code directly from php.net, and builds a single PHP CLI binary using `clang`, with optimizations tweaked specifically for size.  For example, the `CodeSize` for the entire php-7.3.9 runtime layer is **2.36MB**, allowing the lambda function to quickly perform a cold startup.  Our unit tests execute in roughly 200ms for a cold start, while a warm start fully executes in _only 17ms_.

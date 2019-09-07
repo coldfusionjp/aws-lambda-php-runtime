@@ -1,0 +1,2 @@
+#!/bin/sh
+/opt/php-runtime/bin/php /opt/php-runtime/bootstrap.php

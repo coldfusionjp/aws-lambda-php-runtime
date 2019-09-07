@@ -5,8 +5,8 @@ OUTPUT_TARGETS		:= $(foreach ver, $(PHP_VERSIONS), build/$(ver)-runtime.zip)
 
 #------------------------------------------------------------------------
 
-SOURCES				:= runtime/bootstrap runtime/CFPHPRuntime/bootstrap.php runtime/CFPHPRuntime/Context.inc.php runtime/CFPHPRuntime/Logger.inc.php
-TEST_SOURCES		:= tests/helloworld.php
+SOURCES				:= src/bootstrap $(shell find src -name "*.php")
+TEST_SOURCES		:= $(shell find tests -name "*.php")
 SHELL				:= /bin/bash
 
 UNAME_OS			:= $(shell uname -s)
@@ -43,9 +43,9 @@ endef
 define generateBuildRule
 $(target): Dockerfile
 	@mkdir -p $$(dir $$@)
-	time docker build --build-arg PHP_VERSION="$$(call phpTag,$$@)" -t "coldfusionjp/aws-lambda-runtime:$$(call phpTag,$$@)" -f $$< . | tee build/$$(call phpTag,$$@).log ; exit "$$$${PIPESTATUS[0]}"
-	docker run -v $$(PWD)/runtime/CFPHPRuntime/bin:/mnt --rm --entrypoint cp "coldfusionjp/aws-lambda-runtime:$$(call phpTag,$$@)" /opt/php/bin/php /mnt
-	cd runtime && zip -v -9 -r ../$$@ *
+	time docker build --build-arg PHP_VERSION="$$(call phpTag,$$@)" -t "coldfusionjp/aws-lambda-php-runtime:$$(call phpVersion,$$@)" -f $$< . | tee build/$$(call phpTag,$$@).log ; exit "$$$${PIPESTATUS[0]}"
+	docker run -v $$(PWD)/src/php-runtime/bin:/mnt --rm --entrypoint cp "coldfusionjp/aws-lambda-php-runtime:$$(call phpVersion,$$@)" /opt/php/bin/php /mnt
+	cd src && zip -v -9 -r ../$$@ *
 	aws lambda publish-layer-version --layer-name "$$(call lambdaLayerName,$$@)-runtime" --description "PHP $$(call phpVersion,$$@) Runtime" --license-info MIT --zip-file fileb://$$@
 endef
 

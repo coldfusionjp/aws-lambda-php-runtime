@@ -1,2 +1,0 @@
-#!/bin/sh
-/opt/CFPHPRuntime/bin/php /opt/CFPHPRuntime/bootstrap.php

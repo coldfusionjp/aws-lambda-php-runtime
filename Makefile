@@ -18,7 +18,9 @@ endif
 
 AWS_ACCOUNT_ID		?= $(shell aws sts get-caller-identity | jq -r .Account)
 AWS_DEFAULT_REGION	?= $(shell aws configure get region)
+LAMBDA_TEST_NAME	:= php-runtime-tests
 LAMBDA_EXECUTE_ROLE	:= lambda-basic-execute
+LAMBDA_TEST_HANDLER	:= helloworld.mainHandler
 
 #------------------------------------------------------------------------
 
@@ -37,11 +39,6 @@ define lambdaLayerName
 $(subst .,_,$(call phpTag,$(1)))
 endef
 
-# return the AWS Lambda function name for a testing target (php-7_3_6-runtime-tests)
-define lambdaFunctionTestName
-$(call lambdaLayerName,$(1))-runtime-tests
-endef
-
 # generate a rule to build a given output target
 define generateBuildRule
 $(target): Dockerfile
@@ -49,7 +46,7 @@ $(target): Dockerfile
 	time docker build --build-arg PHP_VERSION="$$(call phpTag,$$@)" -t "coldfusionjp/aws-lambda-runtime:$$(call phpTag,$$@)" -f $$< . | tee build/$$(call phpTag,$$@).log ; exit "$$$${PIPESTATUS[0]}"
 	docker run -v $$(PWD)/runtime/CFPHPRuntime/bin:/mnt --rm --entrypoint cp "coldfusionjp/aws-lambda-runtime:$$(call phpTag,$$@)" /opt/php/bin/php /mnt
 	cd runtime && zip -v -9 -r ../$$@ *
-	aws lambda publish-layer-version --layer-name "$$(call lambdaLayerName,$$@)-runtime" --description "PHP $$(call phpVersion,$$@) Runtime" --zip-file fileb://$$@
+	aws lambda publish-layer-version --layer-name "$$(call lambdaLayerName,$$@)-runtime" --description "PHP $$(call phpVersion,$$@) Runtime" --license-info MIT --zip-file fileb://$$@
 endef
 
 #------------------------------------------------------------------------
@@ -66,33 +63,18 @@ build/tests.zip: $(TEST_SOURCES)
 	@mkdir -p $(dir $@)
 	cd tests && zip -v -9 -r ../$@ *	
 
-# create lambda functions required for testing
-test-create-functions: build/tests.zip
-	@for version in $(PHP_VERSIONS); do \
-		LAYER_NAME=`echo $${version}-runtime | sed "s/\./_/g"` ; \
-		FUNCTION_NAME=`echo $${version}-runtime-tests | sed "s/\./_/g"` ; \
-		LAYER_LATEST_ARN=`aws lambda list-layer-versions --layer-name "$${LAYER_NAME}" | jq -r '.LayerVersions[0].LayerVersionArn'` ; \
-		FUNCTION_CHECK=`aws lambda get-function-configuration --function-name "$${FUNCTION_NAME}" 2>&1 | jq -r '.FunctionName'` ; \
-		if [ "$${FUNCTION_CHECK}" != "$${FUNCTION_NAME}" ] ; then \
-			echo "Function \"$${FUNCTION_NAME}\" does not exist on AWS Lambda, creating..." ; \
-			aws lambda create-function --function-name "$${FUNCTION_NAME}" --role "arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(LAMBDA_EXECUTE_ROLE)" --layers "$${LAYER_LATEST_ARN}" --runtime provided --handler "helloworld.mainHandler" --zip-file fileb://$< ; \
-		fi ; \
-	done
+# create lambda function required for testing
+test-create-function: build/tests.zip
+	aws lambda create-function --function-name "$(LAMBDA_TEST_NAME)" --role "arn:aws:iam::$(AWS_ACCOUNT_ID):role/$(LAMBDA_EXECUTE_ROLE)" --runtime provided --handler "$(LAMBDA_TEST_HANDLER)" --zip-file fileb://$<
 
-# push runtime tests and invoke lambda
+# update runtime test code and invoke lambda using the latest runtime layer for each supported PHP version
 test: build/tests.zip
+	aws lambda update-function-code --function-name "$(LAMBDA_TEST_NAME)" --zip-file fileb://$<
 	@for version in $(PHP_VERSIONS); do \
 		LAYER_NAME=`echo $${version}-runtime | sed "s/\./_/g"` ; \
-		FUNCTION_NAME=`echo $${version}-runtime-tests | sed "s/\./_/g"` ; \
 		LAYER_LATEST_ARN=`aws lambda list-layer-versions --layer-name "$${LAYER_NAME}" | jq -r '.LayerVersions[0].LayerVersionArn'` ; \
-		FUNCTION_CHECK=`aws lambda get-function-configuration --function-name "$${FUNCTION_NAME}" 2>&1 | jq -r '.FunctionName'` ; \
-		if [ "$${FUNCTION_CHECK}" != "$${FUNCTION_NAME}" ] ; then \
-			echo "Function \"$${FUNCTION_NAME}\" does not exist on AWS Lambda, please run \"make test-create-functions\" first!" ; \
-			exit 1 ; \
-		fi ; \
-		aws lambda update-function-configuration --function-name "$${FUNCTION_NAME}" --layers "$${LAYER_LATEST_ARN}" ; \
-		aws lambda update-function-code --function-name "$${FUNCTION_NAME}" --zip-file fileb://$< ; \
-		aws lambda invoke --invocation-type RequestResponse --function-name "$${FUNCTION_NAME}" --log-type Tail --payload '{"key1":"value1","key2":"value2","key3":"value3"}' response.txt > log.txt ; \
+		aws lambda update-function-configuration --function-name "$(LAMBDA_TEST_NAME)" --layers "$${LAYER_LATEST_ARN}" ; \
+		aws lambda invoke --invocation-type RequestResponse --function-name "$(LAMBDA_TEST_NAME)" --log-type Tail --payload '{"key1":"value1","key2":"value2","key3":"value3"}' response.txt > log.txt ; \
 		echo 'Response:' ; \
 		cat response.txt ; \
 		echo '' ; \

@@ -6,6 +6,8 @@ require_once('/opt/CFPHPRuntime/Context.inc.php');
 
 function mainHandler(array $event, Context $ctx): array
 {
+	echo '*** PHP version: ' . phpversion() . "\n";
+
 	var_dump($ctx);
 	$event['hello'] = 'world';
 	echo "time remaining (msec): " . $ctx->getRemainingTimeInMsec() . "\n";

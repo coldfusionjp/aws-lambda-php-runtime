@@ -8,6 +8,8 @@ RUN sed -i 's;^releasever.*;releasever=2018.03;;' /etc/yum.conf && \
 		curl-devel \
 		diffutils \
 		file \
+		findutils \
+		libxml2-devel \
 		xz
 
 # download and decompress PHP source
@@ -16,7 +18,7 @@ RUN cd /root && \
 	curl -sL https://www.php.net/distributions/${PHP_VERSION}.tar.xz | tar xJv
 
 # compile and strip final binary
-ARG PHP_OPTIONS="--enable-json --enable-filter --enable-mysqlnd --with-curl --with-mysqli=mysqlnd --enable-mbstring --with-mhash"
+ARG PHP_OPTIONS="--enable-json --enable-filter --enable-mysqlnd --with-curl --with-mysqli=mysqlnd --enable-mbstring --with-mhash --enable-libxml --enable-simplexml"
 ARG CFLAGS="-Oz -ffunction-sections -fdata-sections"
 ARG LDFLAGS="-Wl,--plugin-opt=O2 -Wl,--gc-sections -Wl,--as-needed -Wl,--strip-all"
 RUN cd /root/${PHP_VERSION} && \

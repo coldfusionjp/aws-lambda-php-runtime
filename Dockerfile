@@ -1,4 +1,4 @@
-FROM coldfusionjp/amazonlinux-clang:2018.03.0.20190514-llvmorg-8.0.1
+FROM coldfusionjp/amazonlinux-clang:2018.03.0.20190514-llvmorg-9.0.1
 
 # lock OS release and library versions to 2018.03 to match the environment that Lambda runs in
 # see: https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html
@@ -10,6 +10,7 @@ RUN sed -i 's;^releasever.*;releasever=2018.03;;' /etc/yum.conf && \
 		file \
 		findutils \
 		libxml2-devel \
+		oniguruma-devel \
 		xz
 
 # download and decompress PHP source
@@ -18,7 +19,7 @@ RUN cd /root && \
 	curl -sL https://www.php.net/distributions/${PHP_VERSION}.tar.xz | tar xJv
 
 # compile and strip final binary
-ARG PHP_OPTIONS="--enable-json --enable-filter --enable-mysqlnd --with-curl --with-mysqli=mysqlnd --enable-mbstring --with-mhash --enable-libxml --enable-simplexml"
+ARG PHP_OPTIONS="--enable-json --enable-filter --enable-mysqlnd --with-curl --with-mysqli=mysqlnd --enable-mbstring --with-mhash --with-libxml --enable-simplexml"
 ARG CFLAGS="-Oz -ffunction-sections -fdata-sections"
 ARG LDFLAGS="-Wl,--plugin-opt=O2 -Wl,--gc-sections -Wl,--as-needed -Wl,--strip-all"
 RUN cd /root/${PHP_VERSION} && \

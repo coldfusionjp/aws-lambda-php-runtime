@@ -1,4 +1,4 @@
-PHP_VERSIONS		:= php-7.3.10 php-7.3.11 php-7.3.12 php-7.3.13
+PHP_VERSIONS		:= php-7.4.0 php-7.4.1
 
 # generate a list of output targets for each PHP version
 OUTPUT_TARGETS		:= $(foreach ver, $(PHP_VERSIONS), build/$(ver)-runtime.zip)

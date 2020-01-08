@@ -8,6 +8,17 @@ The **AWS Lambda PHP Runtime Layer** is an implementation of a custom lambda run
 
 If you want to get started right away, you can simply use our layers directly with your lambda functions.  Choose an ARN below based on the version of PHP required by your application, and attach it as a layer to your lambda function:
 
+### PHP 7.4 (compiled with clang/llvm-9.0.1)
+
+* php-7.4.1: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_4_1-runtime:2` (2,381,904 bytes)
+* php-7.4.0: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_4_0-runtime:2` (2,382,051 bytes)
+
+### PHP 7.3 (compiled with clang/llvm-8.0.1)
+
+* php-7.3.13: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_3_13-runtime:1` (2,505,365 bytes)
+* php-7.3.12: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_3_12-runtime:1` (2,505,172 bytes)
+* php-7.3.11: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_3_11-runtime:1` (2,505,948 bytes)
+* php-7.3.10: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_3_10-runtime:1` (2,505,488 bytes)
 * php-7.3.9: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_3_9-runtime:7` (2,476,686 bytes)
 * php-7.3.8: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_3_8-runtime:10` (2,478,896 bytes)
 * php-7.3.7: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_3_7-runtime:15` (2,478,802 bytes)

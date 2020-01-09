@@ -10,8 +10,8 @@ If you want to get started right away, you can simply use our layers directly wi
 
 ### PHP 7.4 (compiled with clang/llvm-9.0.1)
 
-* php-7.4.1: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_4_1-runtime:2` (2,381,904 bytes)
-* php-7.4.0: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_4_0-runtime:2` (2,382,051 bytes)
+* php-7.4.1: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_4_1-runtime:8` (2,531,662 bytes)
+* php-7.4.0: `arn:aws:lambda:ap-northeast-1:568458425968:layer:php-7_4_0-runtime:9` (2,531,586 bytes)
 
 ### PHP 7.3 (compiled with clang/llvm-8.0.1)
 

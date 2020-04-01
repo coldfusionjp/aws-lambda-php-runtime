@@ -1,4 +1,4 @@
-PHP_VERSIONS		:= php-7.4.0 php-7.4.1
+PHP_VERSIONS		:= php-7.4.2 php-7.4.3 php-7.4.4
 
 # generate a list of output targets for each PHP version
 OUTPUT_TARGETS		:= $(foreach ver, $(PHP_VERSIONS), build/$(ver)-runtime.zip)
@@ -19,7 +19,7 @@ endif
 AWS_ACCOUNT_ID		?= $(shell aws sts get-caller-identity | jq -r .Account)
 AWS_DEFAULT_REGION	?= $(shell aws configure get region)
 LAMBDA_TEST_NAME	:= php-runtime-tests
-LAMBDA_EXECUTE_ROLE	:= lambda-basic-execute
+LAMBDA_EXECUTE_ROLE	:= LambdaBasicExecute
 LAMBDA_TEST_HANDLER	:= helloworld.mainHandler
 
 #------------------------------------------------------------------------
@@ -69,12 +69,13 @@ test-create-function: build/tests.zip
 
 # update runtime test code and invoke lambda using the latest runtime layer for each supported PHP version
 test: build/tests.zip
+	PAYLOAD_BASE64=`echo '{"key1":"value1","key2":"value2","key3":"value3"}' | base64 -`
 	aws lambda update-function-code --function-name "$(LAMBDA_TEST_NAME)" --zip-file fileb://$<
 	@for version in $(PHP_VERSIONS); do \
 		LAYER_NAME=`echo $${version}-runtime | sed "s/\./_/g"` ; \
 		LAYER_LATEST_ARN=`aws lambda list-layer-versions --layer-name "$${LAYER_NAME}" | jq -r '.LayerVersions[0].LayerVersionArn'` ; \
 		aws lambda update-function-configuration --function-name "$(LAMBDA_TEST_NAME)" --layers "$${LAYER_LATEST_ARN}" ; \
-		aws lambda invoke --invocation-type RequestResponse --function-name "$(LAMBDA_TEST_NAME)" --log-type Tail --payload '{"key1":"value1","key2":"value2","key3":"value3"}' response.txt > log.txt ; \
+		aws lambda invoke --invocation-type RequestResponse --function-name "$(LAMBDA_TEST_NAME)" --log-type Tail --payload "$${PAYLOAD_BASE64}" response.txt > log.txt ; \
 		echo 'Response:' ; \
 		cat response.txt ; \
 		echo '' ; \

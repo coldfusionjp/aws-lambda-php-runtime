@@ -10,6 +10,7 @@ RUN sed -i 's;^releasever.*;releasever=2018.03;;' /etc/yum.conf && \
 		file \
 		findutils \
 		libxml2-devel \
+		openssl-devel \
 		xz
 
 # setup compile and link flags

@@ -38,7 +38,7 @@ RUN yum install -y autoconf && \
 	./buildconf --force
 
 # build and install PHP from source
-ARG PHP_OPTIONS="--enable-json --enable-filter --enable-mysqlnd --with-curl --with-mysqli=mysqlnd --enable-mbstring --with-mhash --with-libxml --enable-simplexml"
+ARG PHP_OPTIONS="--enable-json --enable-filter --enable-mysqlnd --with-curl --with-openssl --with-mysqli=mysqlnd --enable-mbstring --with-mhash --with-libxml --enable-simplexml"
 RUN cd /root/${PHP_VERSION} && \
 	CC="clang" CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS}" ONIG_CFLAGS="/usr/local/include" ONIG_LIBS="-L/usr/local/lib -lonig" ./configure --prefix=/opt/php --disable-cgi --disable-all ${PHP_OPTIONS} && \
 	make -j $(nproc) && \

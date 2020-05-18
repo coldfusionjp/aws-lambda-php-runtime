@@ -161,6 +161,11 @@ class AWSLambdaPHPRuntime
 
 	public function run(): void
 	{
+		// call the coldstart handler function, if it exists
+		if (function_exists('lambdaColdStartHandler'))
+			lambdaColdStartHandler();
+
+		// loop forever, processing requests
 		for (;;)
 		{
 			// get next lambda invocation request

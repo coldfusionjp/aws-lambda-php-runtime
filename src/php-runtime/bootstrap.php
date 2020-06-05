@@ -50,6 +50,13 @@ class AWSLambdaPHPRuntime
 			'logGroupName'		=> $_ENV['AWS_LAMBDA_LOG_GROUP_NAME'] ?? null,
 			'logStreamName'		=> $_ENV['AWS_LAMBDA_LOG_STREAM_NAME'] ?? null
 		];
+
+		// if a cold start handler function exists, call it with our lambda context
+		if (function_exists('coldStartHandler'))
+		{
+			if (!coldStartHandler($this->mLambdaCtx))
+				$this->initializationError('Error: Lambda cold start handler function returned failure');
+		}
 	}
 
 	private function getCurlOptions(): array
@@ -161,10 +168,6 @@ class AWSLambdaPHPRuntime
 
 	public function run(): void
 	{
-		// call the cold start handler function, if it exists
-		if (function_exists('coldStartHandler'))
-			coldStartHandler();
-
 		// loop forever, processing requests
 		for (;;)
 		{

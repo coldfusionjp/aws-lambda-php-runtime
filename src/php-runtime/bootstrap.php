@@ -12,11 +12,6 @@ require_once('Context.inc.php');
 
 class AWSLambdaPHPRuntime
 {
-	private $mEndpoint	  = null;
-	private $mHandlerFunc = null;
-	private $mLambdaCtx   = null;
-	private $mRequestCtx  = null;
-
 	public function __construct()
 	{
 		// enable all errors
@@ -54,8 +49,20 @@ class AWSLambdaPHPRuntime
 		// if a cold start handler function exists, call it with our lambda context
 		if (function_exists('coldStartHandler'))
 		{
-			if (!coldStartHandler($this->mLambdaCtx))
-				$this->initializationError('Error: Lambda cold start handler function returned failure');
+			// call the cold start handler function inside an exception handler (in case it throws)
+			try
+			{
+				coldStartHandler($this->mLambdaCtx);
+			}
+			catch (Exception $e)
+			{
+				// dump exception to stdout (which gets sent to CloudWatch)
+				error_log("{$e}");
+
+				// then call the lambda initialization error handler to abort the lambda
+				$str = 'Error: Lambda cold start handler function failed with message=[' . $e->getMessage() . '], stacktrace=[' . $e->getTrace() . ']';
+				$this->initializationError($str);
+			}
 		}
 	}
 
@@ -199,6 +206,11 @@ class AWSLambdaPHPRuntime
 			}
 		}
 	}
+
+	private ?string			$mEndpoint	  = null;
+	private /*?callable*/	$mHandlerFunc = null;
+	private ?array			$mLambdaCtx   = null;
+	private ?array			$mRequestCtx  = null;
 }
 
 $runtime = new AWSLambdaPHPRuntime();

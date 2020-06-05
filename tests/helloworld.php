@@ -11,9 +11,16 @@ function testRequiredFunctions(): void
 	$sxe = new SimpleXMLElement('<test></test>');
 }
 
+function coldStartHandler(array $ctx): void
+{
+	echo "*** coldStartHandler ***\n";
+	echo 'context=[' . print_r($ctx, true) . "]\n";
+}
+
 function mainHandler(array $event, Context $ctx): array
 {
-	echo '*** PHP version: ' . phpversion() . "\n";
+	echo "*** mainHandler ***\n";
+	echo 'PHP version: ' . phpversion() . "\n";
 
 	testRequiredFunctions();
 

@@ -8,8 +8,6 @@
 
 declare(strict_types = 1);
 
-require_once('Context.inc.php');
-
 class AWSLambdaPHPRuntime
 {
 	public function __construct()
@@ -181,8 +179,8 @@ class AWSLambdaPHPRuntime
 			// get next lambda invocation request
 			$req = $this->nextInvocation();
 
-			// create application context, combining both lambda environment and request contexts
-			$ctx = new Context($this->mLambdaCtx + $this->mRequestCtx);
+			// create context array, combining both lambda environment and request contexts
+			$ctx = $this->mLambdaCtx + $this->mRequestCtx;
 
 			try
 			{

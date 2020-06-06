@@ -17,18 +17,20 @@ function coldStartHandler(array $ctx): void
 	echo 'context=[' . print_r($ctx, true) . "]\n";
 }
 
-function mainHandler(array $event, Context $ctx): array
+function mainHandler(array $event, array $ctx): array
 {
 	echo "*** mainHandler ***\n";
 	echo 'PHP version: ' . phpversion() . "\n";
 
 	testRequiredFunctions();
 
-	var_dump($ctx);
+	// create context object from context
+	$cobj = new Context($ctx);
+	var_dump($cobj);
 	$event['hello'] = 'world';
-	echo "time remaining (msec): " . $ctx->getRemainingTimeInMsec() . "\n";
+	echo "time remaining (msec): " . $cobj->getRemainingTimeInMsec() . "\n";
 
-	$log = $ctx->getLogger();
+	$log = $cobj->getLogger();
 	$log->setLevel(Logger::DEBUG);
 
 	$log->debug("this is a debug log");

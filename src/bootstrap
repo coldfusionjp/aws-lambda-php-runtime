@@ -1,2 +1,2 @@
 #!/bin/sh
-/opt/php-runtime/bin/php /opt/php-runtime/bootstrap.php
+LD_LIBRARY_PATH=/opt/php-runtime/lib:${LD_LIBRARY_PATH:-} /opt/php-runtime/bin/php /opt/php-runtime/main.php

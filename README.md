@@ -1,8 +1,9 @@
 # AWS Lambda PHP Runtime Layer
 
-[![pipeline status](https://gitlab.com/coldfusionjp/aws-lambda-php-runtime/badges/master/pipeline.svg)](https://gitlab.com/coldfusionjp/aws-lambda-php-runtime/commits/master)
+> [!NOTE]
+> This repo has been recently refreshed with a update to support the latest PHP 8.4.7 (as of today), arm64 platform support, and the latest Amazon Linux 2023 (al2023) OS runtime.  The following README is out of date and will be updated soon, but simply cloning this repo and running `make` (Docker required) will give you a fully functional PHP lambda layer package.  Run `make test` to create a test Lambda function and function URL which executes `phpinfo()` that can be accessed directly with your browser.
 
-The **AWS Lambda PHP Runtime Layer** is an implementation of a custom lambda runtime to provide direct PHP language support with AWS Lambda, packaged into an easy-to-use lambda layer.  The latest versions of PHP 7.3+ are provided, with the PHP binary built directly from the [source distributions available at php.net](https://www.php.net/distributions/).
+This is an implementation of a custom lambda runtime to provide direct PHP language support with AWS Lambda, packaged into an easy-to-use lambda layer.  The latest versions of PHP 7.3+ are provided, with the PHP binary built directly from the [source distributions available at php.net](https://www.php.net/distributions/).
 
 ## Quickstart
 
@@ -28,7 +29,7 @@ Currently we only provide the PHP Runtime Layers in the Tokyo (`ap-northeast-1`)
 
 ## Example Code
 
-Combined with the [AWS SDK for PHP Lambda Layer](https://gitlab.com/coldfusionjp/aws-sdk-php-lambda-layer), performing AWS operations with Lambda in PHP only requires a few lines of code:
+Combined with the [AWS SDK for PHP Lambda Layer](https://github.com/coldfusionjp/aws-sdk-php-lambda-layer), performing AWS operations with Lambda in PHP only requires a few lines of code:
 
 ```
 <?php
@@ -61,7 +62,7 @@ function mainHandler(array $event, Context $ctx): array
 
 A Dockerfile based on Amazon Linux (using the same runtime as Lambda) downloads the PHP source code directly from php.net, and builds a single PHP CLI binary using `clang`, with optimizations tweaked specifically for size.  For example, the `CodeSize` for the entire php-7.3.9 runtime layer is **2.36MB**, allowing the lambda function to quickly perform a cold startup.  Our unit tests execute in roughly 200ms for a cold start, while a warm start fully executes in _only 17ms_.
 
-The Amazon Linux Docker image with a prepackaged `clang` compiler is built using [our Docker scripts](https://gitlab.com/coldfusionjp/build-clang-llvm), and the images are available on [Docker Hub](https://hub.docker.com/r/coldfusionjp/amazonlinux-clang).
+The Amazon Linux Docker image with a prepackaged `clang` compiler is built using [our Docker scripts](https://github.com/coldfusionjp/build-clang-llvm), and the images are available on [Docker Hub](https://hub.docker.com/r/coldfusionjp/amazonlinux-clang).
 
 ## License
 

@@ -1,14 +1,15 @@
 <?php
-
-// AWS Lambda PHP Runtime Layer (https://gitlab.com/coldfusionjp/aws-lambda-php-runtime)
-// Copyright 2019 Cold Fusion, Inc.
-//
-// This file is subject to the terms and conditions as declared in the file 'LICENSE',
-// which has been included as part of this source code package.
+/*
+ * AWS Lambda PHP Runtime Layer (https://github.com/coldfusionjp/aws-lambda-php-runtime)
+ * Copyright 2019-2025 Cold Fusion, Inc.
+ *
+ * This file is subject to the terms and conditions as declared in the file 'LICENSE',
+ * which has been included as part of this source code package.
+ */
 
 declare(strict_types = 1);
 
-class Logger
+class LambdaLogger
 {
 	public const DEBUG		= 0;
 	public const INFO		= 1;
@@ -23,9 +24,6 @@ class Logger
 		self::ERROR			=> '[ERROR]   ',
 		self::CRITICAL		=> '[CRITICAL]'
 	];
-
-	private $mLogLevel  = self::INFO;
-	private $mRequestID = null;
 
 	public function __construct(string $requestID)
 	{
@@ -78,4 +76,7 @@ class Logger
 	{
 		$this->log(self::CRITICAL, $msg);
 	}
+
+	private int	   $mLogLevel  = self::INFO;
+	private string $mRequestID;
 }
